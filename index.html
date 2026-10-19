@@ -157,7 +157,7 @@ const P = CONFIG.presentation;
 $("presTitre").innerHTML = P.titre ? esc(P.titre) : "Une friterie à découvrir à Caudry";
 $("presTexte").innerHTML = P.texte ? P.texte.split(/\n+/).map((t) => `<p style="margin-top:12px">${esc(t)}</p>`).join("") : `<p>${todo("Présentation de la friterie à rédiger (2 à 4 phrases)")}</p>`;
 $("presFaits").innerHTML = P.points.length ? P.points.map((t) => `<span class="fact">${esc(t)}</span>`).join("") : "";
-put($("presPhoto"), photo(P.photo, "Friterie Martinus", "Photo de la friterie à ajouter"));
+put($("presPhoto"), photo(P.photo, "Une boîte en carton marquée d'un grand M rouge, aux couleurs de Chez Martinus", "Photo de la friterie à ajouter"));
 $("presPhoto").classList.toggle("ph", !P.photo);
 
 // Carte

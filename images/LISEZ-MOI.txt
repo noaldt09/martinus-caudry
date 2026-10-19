@@ -1,1 +1,1 @@
-Déposez ici le logo et les photos (logo.png, ambiance.jpg, ...).
+Déposez ici le logo et les photos. presentation.jpg est utilisée dans la section de présentation.

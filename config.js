@@ -18,7 +18,7 @@ const CONFIG = {
   presentation: {
     titre: "Une friterie rénovée, des smash burgers et de bonnes frites",
     texte: "Martin a repris l'ancienne Friterie des Étangs, à Caudry, l'a entièrement rénovée et rebaptisée Chez Martinus.\nSa spécialité : les smash burgers, inspirés du street food américain découvert lors de ses voyages à New York. Le steak est pressé sur une plaque bien chaude pour être caramélisé.",
-    photo: "",     // ex. "images/friterie.jpg"
+    photo: "images/presentation.jpg",
     points: ["Smash burgers", "Frites", "Tacos & wraps", "À emporter", "Livraison à domicile"]
   },
 
