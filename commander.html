@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Commander chez Martinus</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Bowlby+One&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="index.html" id="brand" aria-label="Chez Martinus, accueil"></a>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+    <nav class="main" id="menu" aria-label="Navigation principale">
+      <a href="index.html">Accueil</a>
+      <a href="index.html#carte">La carte</a>
+      <a href="index.html#galerie">Galerie</a>
+      <a href="index.html#infos">Infos &amp; contact</a>
+      <a href="commander.html" class="nav-cta">Commander</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <div class="page-head">
+    <p class="eyebrow">À emporter</p>
+    <h1>Commander chez Martinus</h1>
+    <p class="lead">Choisissez vos produits, indiquez l'heure de retrait et payez sur place, au comptoir.</p>
+  </div>
+  <div class="order" id="commande">
+    <div id="carte"></div>
+    <aside class="cart" id="panier" aria-label="Votre commande">
+      <h2>Votre commande</h2>
+      <ul id="lignes"></ul>
+      <div class="total"><span>Total</span><span id="total">0,00 €</span></div>
+      <form id="form" novalidate>
+        <div style="display:grid;gap:12px">
+          <label class="field">Heure de retrait<select id="creneau"></select></label>
+          <label class="field">Prénom<input id="nom" autocomplete="given-name" maxlength="40" required></label>
+          <label class="field">Téléphone<input id="tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required></label>
+          <label class="field">Précision (facultatif)<textarea id="note" maxlength="200" placeholder="Ex. : sans oignons"></textarea></label>
+          <p class="err" id="err" role="alert"></p>
+          <button class="btn btn-solid" type="submit" id="envoi">Envoyer ma commande</button>
+          <p class="pay" id="paiement"></p>
+        </div>
+      </form>
+    </aside>
+  </div>
+  <div class="done" id="fait" hidden></div>
+</main>
+
+<div class="cartbar" id="cartbar">
+  <span id="cartbarTexte">Panier vide</span>
+  <a class="btn btn-solid" href="#panier">Voir ma commande</a>
+</div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+barreMaquette();
+const C = CONFIG.commande;
+const panier = {};                       // id -> quantité
+const produits = {};
+C.categories.forEach((c) => c.produits.forEach((p) => { produits[p.id] = p; }));
+
+// En-tête
+(function () {
+  const b = $("brand");
+  b.innerHTML = `<span><span class="word">${esc(CONFIG.nom)}</span></span>`;
+  const burger = $("burger"), menu = $("menu");
+  burger.addEventListener("click", () => { const o = menu.classList.toggle("open"); burger.setAttribute("aria-expanded", o); });
+})();
+
+// Carte
+$("carte").innerHTML = C.categories.map((c) => `
+  <section class="cat"><h2>${esc(c.nom)}</h2>
+  ${c.produits.map((p) => `
+    <div class="item">
+      <div><h3>${esc(p.nom)}</h3><p>${esc(p.description || "")}</p><p class="pr">${eur(p.prix)}</p></div>
+      <div class="qty">
+        <button type="button" data-id="${esc(p.id)}" data-d="-1" aria-label="Retirer ${esc(p.nom)}">−</button>
+        <output id="q-${esc(p.id)}" aria-live="polite">0</output>
+        <button type="button" data-id="${esc(p.id)}" data-d="1" aria-label="Ajouter ${esc(p.nom)}">+</button>
+      </div>
+    </div>`).join("")}
+  </section>`).join("");
+$("paiement").textContent = C.paiement;
+
+$("carte").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-id]");
+  if (!b) return;
+  const id = b.dataset.id, q = Math.max(0, Math.min(20, (panier[id] || 0) + Number(b.dataset.d)));
+  if (q) panier[id] = q; else delete panier[id];
+  $("q-" + id).textContent = q;
+  rendrePanier();
+});
+
+function total() { return Object.entries(panier).reduce((s, [id, q]) => s + produits[id].prix * q, 0); }
+function nbArticles() { return Object.values(panier).reduce((s, q) => s + q, 0); }
+function rendrePanier() {
+  const lignes = Object.entries(panier);
+  $("lignes").innerHTML = lignes.length
+    ? lignes.map(([id, q]) => `<li><span>${q} × ${esc(produits[id].nom)}</span><span>${eur(produits[id].prix * q)}</span></li>`).join("")
+    : `<li class="vide">Ajoutez des produits pour commencer.</li>`;
+  $("total").textContent = eur(total());
+  $("cartbarTexte").textContent = nbArticles() ? `${nbArticles()} article${nbArticles() > 1 ? "s" : ""} · ${eur(total())}` : "Panier vide";
+}
+
+// Créneaux
+(function () {
+  const l = creneaux(), sel = $("creneau");
+  if (!l.length) { sel.innerHTML = `<option value="">Aucun créneau disponible</option>`; sel.disabled = true; return; }
+  sel.innerHTML = l.map((c) => `<option value="${esc(c.value)}">${esc(c.label)}</option>`).join("");
+})();
+
+// Envoi (maquette : enregistre dans ce navigateur)
+$("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const err = (m) => { $("err").textContent = m; };
+  const nom = $("nom").value.trim(), tel = $("tel").value.trim(), creneau = $("creneau").value;
+  if (!nbArticles()) return err("Ajoutez au moins un produit.");
+  if (!creneau) return err("Aucun créneau de retrait n'est disponible pour le moment.");
+  if (nom.length < 2) return err("Indiquez votre prénom.");
+  if (!/^[0-9 .+()-]{8,20}$/.test(tel)) return err("Indiquez un numéro de téléphone valide.");
+  err("");
+  const liste = lireCommandes();
+  const numero = "M" + String(Math.floor(1000 + Math.random() * 9000));
+  const commande = {
+    id: numero, statut: "nouvelle", creeLe: new Date().toISOString(), creneau,
+    nom, tel, note: $("note").value.trim(),
+    lignes: Object.entries(panier).map(([id, q]) => ({ nom: produits[id].nom, q, prix: produits[id].prix })),
+    total: total()
+  };
+  liste.push(commande);
+  ecrireCommandes(liste);
+  const lib = $("creneau").selectedOptions[0].textContent;
+  $("commande").hidden = true; $("cartbar").hidden = true;
+  const f = $("fait"); f.hidden = false;
+  f.innerHTML = `
+    <p class="eyebrow" style="justify-self:center">Commande envoyée</p>
+    <div class="num">${esc(numero)}</div>
+    <p><strong>${esc(nom)}</strong>, votre commande sera prête : <strong>${esc(lib)}</strong>.</p>
+    <ul>${commande.lignes.map((l) => `<li><span>${l.q} × ${esc(l.nom)}</span><span>${eur(l.prix * l.q)}</span></li>`).join("")}
+    <li><strong>Total à payer sur place</strong><strong>${eur(commande.total)}</strong></li></ul>
+    <p class="pay">${esc(C.paiement)} Communiquez le numéro ${esc(numero)} au comptoir.</p>
+    <a class="btn btn-solid" href="commander.html" style="justify-self:center">Nouvelle commande</a>`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+rendrePanier();
+</script>
+</body>
+</html>

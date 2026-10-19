@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Commandes Chez Martinus</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Bowlby+One&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="index.html" id="brand"></a>
+    <nav class="main" style="display:flex"><a href="commander.html" class="nav-cta">Page client</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <p class="eyebrow">Côté friterie</p>
+    <h1>Commandes du jour</h1>
+    <p class="lead">Les nouvelles commandes apparaissent ici. Dans la version finale, cette page sera protégée par un mot de passe et recevra les commandes de tous les clients, avec un email pour chacune.</p>
+    <p style="margin-top:14px"><button class="btn btn-line" id="vider" type="button">Effacer les commandes de test</button></p>
+  </div>
+  <div class="board">
+    <section class="col"><h2>Nouvelles <span class="count" id="n-nouvelle">0</span></h2><div id="c-nouvelle"></div></section>
+    <section class="col"><h2>En préparation <span class="count" id="n-preparation">0</span></h2><div id="c-preparation"></div></section>
+    <section class="col"><h2>Prêtes <span class="count" id="n-prete">0</span></h2><div id="c-prete"></div></section>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+barreMaquette();
+$("brand").innerHTML = `<span><span class="word">${esc(CONFIG.nom)}</span></span>`;
+
+const SUIVANT = { nouvelle: ["preparation", "Passer en préparation"], preparation: ["prete", "Marquer comme prête"], prete: ["retiree", "Remise au client"] };
+const quand = (c) => { const [d, h] = c.split(" "); const a = new Date(d + "T00:00:00"); const auj = new Date(); const memeJour = a.toDateString() === auj.toDateString(); return (memeJour ? "Aujourd'hui" : jourFr[a.getDay()]) + " " + h.replace(":", "h"); };
+
+function carte(c) {
+  const suiv = SUIVANT[c.statut];
+  return `<article class="ticket-cmd">
+    <div class="top"><span class="num">${esc(c.id)}</span><span>${esc(quand(c.creneau))}</span></div>
+    <div class="meta">${esc(c.nom)} · ${esc(c.tel)}</div>
+    <ul>${c.lignes.map((l) => `<li>${l.q} × ${esc(l.nom)}</li>`).join("")}</ul>
+    ${c.note ? `<div class="note">${esc(c.note)}</div>` : ""}
+    <div class="top"><span>${eur(c.total)} à encaisser</span></div>
+    ${suiv ? `<button class="btn btn-solid" type="button" data-id="${esc(c.id)}" data-s="${suiv[0]}">${suiv[1]}</button>` : ""}
+  </article>`;
+}
+
+function rendre() {
+  const liste = lireCommandes().filter((c) => c.statut !== "retiree");
+  liste.sort((a, b) => a.creneau.localeCompare(b.creneau));
+  ["nouvelle", "preparation", "prete"].forEach((s) => {
+    const l = liste.filter((c) => c.statut === s);
+    $("n-" + s).textContent = l.length;
+    $("c-" + s).innerHTML = l.length ? l.map(carte).join("") : `<p class="vide-col">Aucune commande.</p>`;
+  });
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-id]");
+  if (!b) return;
+  const l = lireCommandes(); const c = l.find((x) => x.id === b.dataset.id);
+  if (c) { c.statut = b.dataset.s; ecrireCommandes(l); rendre(); }
+});
+$("vider").addEventListener("click", () => { ecrireCommandes([]); rendre(); });
+window.addEventListener("storage", rendre);
+setInterval(rendre, 5000);
+rendre();
+</script>
+</body>
+</html>
